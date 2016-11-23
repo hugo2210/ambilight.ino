@@ -9,15 +9,21 @@
 
 #define MAX_CLI 500
 #define MAX_PET 1000
+#define LEN 250
+
+int npet;
+int media;
 
 pthread_t threads[MAX_CLI];
 
 typedef struct datoshilo{
 	int num_pet;
-	int tRflx[MAX_PET];
+	double tRflx[MAX_PET];
 }datoshilo;
 
-double NumeroAleatorio (double inferior, double superior)
+datoshilo datos[MAX_CLI];
+
+double NumAleatorio (double inferior, double superior)
 {
 	double num;
 	num=(double)rand();
@@ -35,6 +41,11 @@ double DistExponencial(double med)
 void * Usuario (void * arg)
 {
 	int num;
+	int s;
+	int i;
+	char mensaje[LEN];
+	char respuesta[LEN];
+	double dormir;
 	num = *((int *)arg);
 	
 	printf("Soy el hilo %d\n", num);
@@ -45,18 +56,26 @@ void * Usuario (void * arg)
 	servidor.sin_port=htons(7000+num);
 	inet_aton("192.168.0.20", &servidor.sin_addr.s_addr);
 	
-	//crear socket
-	int socket(int PF_INET, int SOCK_STREAM, int TCP);
-	//connect
-	int connect (int s, const struct sockaddr * dir, socklen_t len);
-	int retorno;
-	retorno=connect(s,(struct sockaddr *)&servidor,sizeof(servidor));
-	//write
-	ssize_t write (int s, const void * buf, size_t len);
-	//read
-	ssize_t read (int s, void * buf, size_t len);
-	//close
-	int close (int s);
+	for(i=0;i<npet;i++)
+	{
+		//crear socket
+		s=socket( PF_INET,  SOCK_STREAM, 0);
+		//connect
+		connect(s,(struct sockaddr *)&servidor,sizeof(servidor));
+		//write
+		write ( s, mensaje, LEN );
+		//read
+		read ( s, respuesta, LEN );
+		//close
+		close (s);
+		dormir=DistExponencial(media);
+		usleep(dormir*1000000);
+		//incrementar numpet
+		datos[num].num_pet++;
+		//guardar tiempo rflx
+		datos[num].tRflx[i]=dormir;
+		
+	}
 }
 
 
@@ -64,11 +83,16 @@ int main (int arcg, char * argv[])
 {
 	int nhilos;
 	int i;
+	int j;
 	int retorno;
 	int parametro[MAX_CLI];
 
 	printf("Introduce el numero de hilos: \n");
 	scanf("%d", &nhilos);
+	printf("Cuantas peticiones: \n");
+	scanf("%d", &npet);
+	printf("Media de tiempo: \n");
+	scanf("%d", &media);
 
 	for (i=0;i<nhilos;i++)
 	{
@@ -90,7 +114,18 @@ int main (int arcg, char * argv[])
 		}
 	}
 
-}
+	FILE * f;
+	f = fopen("Datos.txt","w+");
+	for(i=0;i<nhilos;i++)
+	{	for(j=0;j<npet;j++)
+		{
 
+			fprintf(f,"%f\n", datos[i].tRflx[j]);
+			
+		}
+	}
+	fclose (f);
+
+}
 
 
