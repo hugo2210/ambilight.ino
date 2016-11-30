@@ -15,7 +15,7 @@
 double base;
 double inicio;
 double final;
-int media;
+double med;
 
 pthread_t threads[MAX_CLI];
 
@@ -75,37 +75,42 @@ void * Usuario (void * arg)
 	servidor.sin_port=htons(7000+num);
 	inet_aton("192.168.0.20", &servidor.sin_addr.s_addr);
 	
-	for(i=0;i<npet;i++)
+	i=0;
+	while(d2<final)
+	//for(i=0;i<npet;i++)
 	{
-		//crear socket
-		clock_gettime(CLOCK_MONOTONIC_RAW, &t1);
+			//crear socket
+			clock_gettime(CLOCK_MONOTONIC_RAW, &t1);
 
-		s=socket( PF_INET,  SOCK_STREAM, 0);
-		//connect
-		connect(s,(struct sockaddr *)&servidor,sizeof(servidor));
-		//write
-		write ( s, mensaje, LEN );
-		//read
-		read ( s, respuesta, LEN );
-		//close
-		close (s);
-		dormir=DistExponencial(media);
-		usleep(dormir*1000000);
+			s=socket( PF_INET,  SOCK_STREAM, 0);
+			//connect
+			connect(s,(struct sockaddr *)&servidor,sizeof(servidor));
+			//write
+			write ( s, mensaje, LEN );
+			//read
+			read ( s, respuesta, LEN );
+			//close
+			close (s);
+			dormir=DistExponencial(med);
+			usleep(dormir*1000000);
 
-		clock_gettime(CLOCK_MONOTONIC_RAW, &t2);
+			clock_gettime(CLOCK_MONOTONIC_RAW, &t2);
 
-		//incrementar numpet
-		datos[num].num_pet++;
-		//guardar tiempo rflx
-		datos[num].tRflx[i]=dormir;
+			d1=time2double(t1);
+			d2=time2double(t2);
+			//incrementar numpet
+		if(d1>inicio && d2<final)
+		{
+			datos[num].num_pet++;
+			//guardar tiempo rflx
+			datos[num].tRflx[i]=dormir;
+			diferencia=d2-d1;
 
-		d1=time2double(t1);
-		d2=time2double(t2);
+			//guardar tiempo de respuesta
+			datos[num].tResp[i]=diferencia;
 
-		diferencia=d2-d1;
-
-		//guardar tiempo de respuesta
-		datos[num].tResp[i]=diferencia;
+			i++;
+		}
 		
 	}
 }
@@ -125,14 +130,20 @@ int main (int arcg, char * argv[])
 	scanf("%d", &nhilos);
 	printf("Cuanto dura el transitorio (s): \n");
 	scanf("%d", &trans_med);
-	printf("Media de tiempo: \n");
+	printf("Intervalo de medicion: \n");
 	scanf("%d", &int_med);
+	printf("Tiempo de reflexion: \n");
+	scanf("%lf", &med);
+	
 //////////////////////
 	struct timespec time_base;
 
 	clock_gettime(CLOCK_MONOTONIC_RAW, &time_base);
-	base=
+	base=time2double(time_base);
+	inicio=base+trans_med;
+	final=inicio+int_med;
 //////////////////////
+
 	for (i=0;i<nhilos;i++)
 	{
 		parametro[i]=i;
@@ -153,28 +164,25 @@ int main (int arcg, char * argv[])
 		}
 	}
 
-	FILE * f;
+	FILE * f,*g;
 	f = fopen("tRflex.txt","w+");
+	g = fopen("tResp.txt","w+");
 	for(i=0;i<nhilos;i++)
-	{	for(j=0;j<npet;j++)
+	{	for(j=0;j<datos[i].num_pet;j++)
 		{
 
 			fprintf(f,"%f\n", datos[i].tRflx[j]);	
+			fprintf(g,"%f\n", datos[i].tResp[j]);
 		}
 	}
 	fclose (f);
-
-	FILE * g;
-	g = fopen("tResp.txt","w+");
-	for(i=0;i<nhilos;i++)
-	{	for(j=0;j<npet;j++)
-		{
-
-			fprintf(f,"%f\n", datos[i].tResp[j]);	
-		}
-	}
 	fclose (g);
+	
+	
 
 }
+
+
+
 
 
